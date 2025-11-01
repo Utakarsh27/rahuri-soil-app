@@ -8,7 +8,7 @@ import pandas as pd
 
 st.set_page_config(page_title="SmartFarm Analyzer", layout="wide")
 
-st.title("🌾 SmartFarm Analyzer — Soil Salinity & Slope (MPKV Rahuri)")
+st.title(" SmartFarm Analyzer — Soil Salinity & Slope (MPKV Rahuri)")
 st.markdown("### A simple decision support demo using Google Earth Engine outputs")
 
 # Sidebar: Select Farm / Area
@@ -30,18 +30,18 @@ slope_img = Image.open("assets/slope_map_rahuri.png")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("🧭 Slope Map")
+    st.subheader(" Slope Map")
     st.image(slope_img, use_container_width=True)
     st.caption("Data source: SRTM (30 m) DEM")
 
 with col2:
-    st.subheader("🧂 Soil Salinity Proxy Map")
+    st.subheader(" Soil Salinity Proxy Map")
     st.image(sal_img, use_container_width=True)
     st.caption("Computed from Sentinel-2 NDVI + NDWI indices (2024 median composite)")
 
 # Recommendation logic (very simple rule)
 st.markdown("---")
-st.subheader("📋 Crop Recommendation")
+st.subheader(" Crop Recommendation")
 
 # Example lookup table (you can load from CSV if you like)
 crop_lookup = pd.DataFrame({
@@ -69,7 +69,7 @@ recommended = crop_lookup[
 if len(recommended) > 0:
     st.success(
         f"**Average slope:** {avg_slope:.1f}%  |  **Salinity:** Moderate (Class {salinity_class})  \n\n"
-        f"✅ Suitable crops: {', '.join(recommended)}"
+        f" Suitable crops: {', '.join(recommended)}"
     )
 else:
     st.warning(
@@ -78,3 +78,4 @@ else:
     )
 
 st.markdown("*(Prototype: For field validation, compare with soil EC tests or soil health cards.)*")
+
