@@ -1,4 +1,4 @@
-# rahuri-soil-appSmartFarm_Analyzer/
+# rahuri-soil-app
 │
 ├── app
 ├── requirements.txt
