@@ -1,1 +1,8 @@
-# rahuri-soil-app
+# rahuri-soil-appSmartFarm_Analyzer/
+│
+├── app.py
+├── requirements.txt
+├── assets/
+│   ├── slope_map_rahuri.png
+│   └── salinity_map_rahuri.png
+└── README.md
