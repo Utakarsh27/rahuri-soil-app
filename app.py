@@ -1,90 +1,80 @@
+import streamlit as st
+from PIL import Image
+import pandas as pd
 
-// -----------------------------------------------------------
-// SIMPLE SOIL SALINITY & SLOPE ANALYSIS (MPKV RAHURI)
-// -----------------------------------------------------------
+# -----------------------------------------------------------
+# SMARTFARM ANALYZER — MPKV RAHURI DEMO (Slope & Salinity)
+# -----------------------------------------------------------
 
-// 1️⃣ Study Area
-var area = ee.Geometry.Polygon([
-  [[74.600,19.420],
-   [74.650,19.420],
-   [74.650,19.390],
-   [74.600,19.390]]
-]);
-var area = ee.Geometry.Polygon([...]);
-Map.centerObject(area, 13);
-Map.addLayer(area, {color:'red'}, 'Study Area');
+st.set_page_config(page_title="SmartFarm Analyzer", layout="wide")
 
-// 2️⃣ Sentinel-2 Imagery (Cloud-filtered Composite)
-var s2 = ee.ImageCollection('COPERNICUS/S2_SR')
-  .filterBounds(area)
-  .filterDate('2024-01-01', '2024-12-31')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .select(['B2','B3','B4','B8','B11','B12']); // essential bands only
+st.title("🌾 SmartFarm Analyzer — Soil Salinity & Slope (MPKV Rahuri)")
+st.markdown("### A simple decision support demo using Google Earth Engine outputs")
 
-// Take median composite (auto-cloud reduced)
-var s2_median = s2.median().clip(area);
-Map.addLayer(s2_median, {bands:['B4','B3','B2'], min:0, max:0.3}, 'True Color');
+# Sidebar: Select Farm / Area
+st.sidebar.header("Select Demo Farm / Area")
+selected_farm = st.sidebar.selectbox(
+    "Choose a farm or area",
+    ("Rahuri Block - Demo 1", "Rahuri Block - Demo 2")
+)
 
-// 3️⃣ Indices for Salinity
-var ndvi = s2_median.normalizedDifference(['B8','B4']).rename('NDVI');
-var ndwi = s2_median.normalizedDifference(['B3','B8']).rename('NDWI');
+# Sidebar: Basic info
+st.sidebar.markdown("**Note:** These maps are derived from Sentinel-2 & SRTM data (2024).")
+st.sidebar.markdown("Salinity = proxy index from NDVI + NDWI (not lab EC values).")
 
-// Simple salinity indicator: low NDVI + low NDWI
-var salinity = ndvi.multiply(-1).add(1).add(ndwi.multiply(-1).add(1)).divide(2);
-Map.addLayer(salinity, {min:0, max:1, palette:['green','yellow','red']}, 'Salinity Index');
+# Load exported PNGs from GEE (keep them in ./assets/)
+sal_img = Image.open("assets/salinity_map_rahuri.png")
+slope_img = Image.open("assets/slope_map_rahuri.png")
 
-// 4️⃣ Slope from SRTM DEM
-var dem = ee.Image('USGS/SRTMGL1_003').clip(area);
-var slope = ee.Terrain.slope(dem);
-Map.addLayer(slope, {min:0, max:20, palette:['lightgreen','yellow','red']}, 'Slope');
+# Layout columns
+col1, col2 = st.columns(2)
 
-// -----------------------------------------------------------
-// Optional: Export Maps
-Export.image.toDrive({
-  image: salinity,
-  description: 'Rahuri_Salinity_Index',
-  region: area,
-  scale: 10,
-  maxPixels: 1e13
-});
+with col1:
+    st.subheader("🧭 Slope Map")
+    st.image(slope_img, use_container_width=True)
+    st.caption("Data source: SRTM (30 m) DEM")
 
-Export.image.toDrive({
-  image: slope,
-  description: 'Rahuri_Slope',
-  region: area,
-  scale: 30,
-  maxPixels: 1e13
-});
-// -----------------------------------------------------------
-// EXPORT VISUALIZED MAPS AS PNG (for poster / demo)
-// -----------------------------------------------------------
+with col2:
+    st.subheader("🧂 Soil Salinity Proxy Map")
+    st.image(sal_img, use_container_width=True)
+    st.caption("Computed from Sentinel-2 NDVI + NDWI indices (2024 median composite)")
 
-// Visualization styles
-var salVis = {min: 0, max: 1, palette: ['green','yellow','red']};
-var slopeVis = {min: 0, max: 20, palette: ['lightgreen','yellow','red']};
+# Recommendation logic (very simple rule)
+st.markdown("---")
+st.subheader("📋 Crop Recommendation")
 
-// Visualize before export (to keep legend colors)
-var salinity_vis = salinity.visualize(salVis);
-var slope_vis = slope.visualize(slopeVis);
+# Example lookup table (you can load from CSV if you like)
+crop_lookup = pd.DataFrame({
+    "Crop": ["Wheat", "Sorghum", "Cotton", "Rice", "Bajra"],
+    "MaxSlope": [3, 8, 6, 2, 10],
+    "MaxSalinityClass": [1, 2, 3, 1, 3],
+    "Note": [
+        "Needs low salinity and gentle slope",
+        "Moderate salinity tolerant",
+        "Tolerates higher salinity",
+        "Requires low slope and low salinity",
+        "Tolerant to salinity and slope"
+    ]
+})
 
-// Export salinity map
-Export.image.toDrive({
-  image: salinity_vis,
-  description: 'Rahuri_Salinity_Map_PNG',
-  folder: 'GEE_exports',
-  fileNamePrefix: 'salinity_map_rahuri',
-  scale: 10,
-  region: area,
-  maxPixels: 1e13
-});
+# Example values — in a real version you can compute from your map stats
+avg_slope = 5.2
+salinity_class = 2   # 1=low, 2=moderate, 3=high
 
-// Export slope map
-Export.image.toDrive({
-  image: slope_vis,
-  description: 'Rahuri_Slope_Map_PNG',
-  folder: 'GEE_exports',
-  fileNamePrefix: 'slope_map_rahuri',
-  scale: 30,
-  region: area,
-  maxPixels: 1e13
-});
+recommended = crop_lookup[
+    (crop_lookup["MaxSlope"] >= avg_slope) &
+    (crop_lookup["MaxSalinityClass"] >= salinity_class)
+]["Crop"].tolist()
+
+if len(recommended) > 0:
+    st.success(
+        f"**Average slope:** {avg_slope:.1f}%  |  **Salinity:** Moderate (Class {salinity_class})  \n\n"
+        f"✅ Suitable crops: {', '.join(recommended)}"
+    )
+else:
+    st.warning(
+        f"Average slope: {avg_slope:.1f}%  |  Salinity: Moderate (Class {salinity_class})  \n"
+        f"No crops found meeting both criteria."
+    )
+
+st.markdown("*(Prototype: For field validation, compare with soil EC tests or soil health cards.)*")
