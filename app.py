@@ -10,6 +10,7 @@ var area = ee.Geometry.Polygon([
    [74.650,19.390],
    [74.600,19.390]]
 ]);
+var area = ee.Geometry.Polygon([...]);
 Map.centerObject(area, 13);
 Map.addLayer(area, {color:'red'}, 'Study Area');
 
