@@ -1,6 +1,6 @@
 # rahuri-soil-appSmartFarm_Analyzer/
 │
-├── app.py
+├── app
 ├── requirements.txt
 ├── assets/
 │   ├── slope_map_rahuri.png
