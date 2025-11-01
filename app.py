@@ -1,80 +1,93 @@
 import streamlit as st
 from PIL import Image
-import pandas as pd
+import os
 
-# -----------------------------------------------------------
-# SMARTFARM ANALYZER — MPKV RAHURI DEMO (Slope & Salinity)
-# -----------------------------------------------------------
-
+# ---------------------------
+# PAGE CONFIGURATION
+# ---------------------------
 st.set_page_config(page_title="SmartFarm Analyzer", layout="wide")
+st.title("🌾 SmartFarm Analyzer — Slope & Salinity Demo (Rahuri)")
 
-st.title("🌾 SmartFarm Analyzer — Soil Salinity & Slope (MPKV Rahuri)")
-st.markdown("### A simple decision support demo using Google Earth Engine outputs")
-
-# Sidebar: Select Farm / Area
-st.sidebar.header("Select Demo Farm / Area")
-selected_farm = st.sidebar.selectbox(
-    "Choose a farm or area",
-    ("Rahuri Block - Demo 1", "Rahuri Block - Demo 2")
+# ---------------------------
+# SIDEBAR / FARM SELECTION
+# ---------------------------
+st.sidebar.header("Farm Selection")
+demo_farm = st.sidebar.selectbox(
+    "Choose Demo Farm:",
+    ["Rahuri Farm 1", "Rahuri Farm 2"]
 )
 
-# Sidebar: Basic info
-st.sidebar.markdown("**Note:** These maps are derived from Sentinel-2 & SRTM data (2024).")
-st.sidebar.markdown("Salinity = proxy index from NDVI + NDWI (not lab EC values).")
+st.sidebar.markdown("---")
+st.sidebar.write("👩‍🌾 This demo uses pre-exported GEE maps (PNG).")
 
-# Load exported PNGs from GEE (keep them in ./assets/)
-sal_img = Image.open("assets/salinity_map_rahuri.png")
-slope_img = Image.open("assets/slope_map_rahuri.png")
+# ---------------------------
+# FILE PATHS
+# ---------------------------
+assets_path = "assets"
+sal_path_default = os.path.join(assets_path, "salinity_map_rahuri.png")
+slope_path_default = os.path.join(assets_path, "slope_map_rahuri.png")
 
-# Layout columns
+# ---------------------------
+# FILE UPLOAD OPTION
+# ---------------------------
+st.sidebar.header("Optional: Upload your own maps")
+uploaded_sal = st.sidebar.file_uploader("Upload Salinity Map (PNG)", type=["png"])
+uploaded_slope = st.sidebar.file_uploader("Upload Slope Map (PNG)", type=["png"])
+
+# ---------------------------
+# LOAD IMAGES
+# ---------------------------
+try:
+    if uploaded_sal is not None:
+        sal_img = Image.open(uploaded_sal)
+    else:
+        sal_img = Image.open(sal_path_default)
+
+    if uploaded_slope is not None:
+        slope_img = Image.open(uploaded_slope)
+    else:
+        slope_img = Image.open(slope_path_default)
+
+except FileNotFoundError as e:
+    st.error(f"❌ File not found: {e}")
+    st.stop()
+
+# ---------------------------
+# LAYOUT — DISPLAY MAPS
+# ---------------------------
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("🧭 Slope Map")
-    st.image(slope_img, use_container_width=True)
-    st.caption("Data source: SRTM (30 m) DEM")
+    st.image(slope_img, use_container_width=True, caption="Slope Map (degrees)")
 
 with col2:
-    st.subheader("🧂 Soil Salinity Proxy Map")
-    st.image(sal_img, use_container_width=True)
-    st.caption("Computed from Sentinel-2 NDVI + NDWI indices (2024 median composite)")
+    st.subheader("🧂 Salinity Map")
+    st.image(sal_img, use_container_width=True, caption="Salinity Index")
 
-# Recommendation logic (very simple rule)
+# ---------------------------
+# RECOMMENDATION
+# ---------------------------
 st.markdown("---")
-st.subheader("📋 Crop Recommendation")
+st.subheader("💡 Recommendation Summary")
 
-# Example lookup table (you can load from CSV if you like)
-crop_lookup = pd.DataFrame({
-    "Crop": ["Wheat", "Sorghum", "Cotton", "Rice", "Bajra"],
-    "MaxSlope": [3, 8, 6, 2, 10],
-    "MaxSalinityClass": [1, 2, 3, 1, 3],
-    "Note": [
-        "Needs low salinity and gentle slope",
-        "Moderate salinity tolerant",
-        "Tolerates higher salinity",
-        "Requires low slope and low salinity",
-        "Tolerant to salinity and slope"
-    ]
-})
-
-# Example values — in a real version you can compute from your map stats
-avg_slope = 5.2
-salinity_class = 2   # 1=low, 2=moderate, 3=high
-
-recommended = crop_lookup[
-    (crop_lookup["MaxSlope"] >= avg_slope) &
-    (crop_lookup["MaxSalinityClass"] >= salinity_class)
-]["Crop"].tolist()
-
-if len(recommended) > 0:
-    st.success(
-        f"**Average slope:** {avg_slope:.1f}%  |  **Salinity:** Moderate (Class {salinity_class})  \n\n"
-        f"✅ Suitable crops: {', '.join(recommended)}"
-    )
+if demo_farm == "Rahuri Farm 1":
+    st.info("Average slope: ~3.5% | Salinity: Moderate → Recommended crops: **Sorghum, Cotton, or Bajra**.")
 else:
-    st.warning(
-        f"Average slope: {avg_slope:.1f}%  |  Salinity: Moderate (Class {salinity_class})  \n"
-        f"No crops found meeting both criteria."
-    )
+    st.info("Average slope: ~2% | Salinity: Low → Recommended crops: **Wheat, Maize, or Onion**.")
 
-st.markdown("*(Prototype: For field validation, compare with soil EC tests or soil health cards.)*")
+st.markdown("📅 *Generated using Sentinel-2 & SRTM DEM (GEE, 2024).*")
+
+# ---------------------------
+# FOOTER
+# ---------------------------
+st.markdown(
+    """
+    <hr style="border:1px solid #ddd">
+    <p style='text-align:center'>
+    Built with ❤️ using Google Earth Engine, Python, and Streamlit.<br>
+    <small>MPKV Rahuri — Avishkar Project 2025</small>
+    </p>
+    """,
+    unsafe_allow_html=True
+)
