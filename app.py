@@ -23,8 +23,8 @@ st.sidebar.markdown("**Note:** These maps are derived from Sentinel-2 & SRTM dat
 st.sidebar.markdown("Salinity = proxy index from NDVI + NDWI (not lab EC values).")
 
 # Load exported PNGs from GEE (keep them in ./assets/)
-sal_img = Image.open("assets/salinity_map_rahuri.png")
-slope_img = Image.open("assets/slope_map_rahuri.png")
+sal_img = Image.open("assets/salinity_map_rahuri.tif")
+slope_img = Image.open("assets/slope_map_rahuri.tif")
 
 # Layout columns
 col1, col2 = st.columns(2)
@@ -78,4 +78,5 @@ else:
     )
 
 st.markdown("*(Prototype: For field validation, compare with soil EC tests or soil health cards.)*")
+
 
